@@ -50,6 +50,7 @@ jobs:
           test -n "$wheel"
           cp "$wheel" site/assets/
           printf '{"file":"%s"}\n' "$(basename "$wheel")" > site/assets/cantera-wheel.json
+          sed -i "s|src=\"./app.js\"|src=\"./app.js?v=${GITHUB_SHA}\"|" site/index.html
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
