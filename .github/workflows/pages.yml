@@ -1,0 +1,63 @@
+name: Build and deploy Flame Aid Web Demo
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out the web demo
+        uses: actions/checkout@v4
+
+      - name: Check out Cantera
+        uses: actions/checkout@v4
+        with:
+          repository: Cantera/cantera
+          ref: 25c1ab1c397e2991c77560b1ad5154919a12c733
+          path: build/cantera
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up Pixi
+        uses: prefix-dev/setup-pixi@ad1da6449d9e506fd127fd67ab2d054a769f6a94
+        with:
+          environments: pyodide
+          working-directory: build/cantera
+
+      - name: Build Cantera for WebAssembly
+        run: pixi run -e pyodide scons pyodide-wheel
+        working-directory: build/cantera
+
+      - name: Add Cantera wheel to the static site
+        run: |
+          wheel="$(find build/cantera/build/pyodide_dist -maxdepth 1 -name 'cantera-*.whl' -print -quit)"
+          test -n "$wheel"
+          cp "$wheel" site/assets/cantera-pyodide.whl
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload the static site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Publish to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

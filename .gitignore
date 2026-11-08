@@ -1,0 +1,3 @@
+build/
+site/assets/pyodide/
+site/assets/cantera-*.whl

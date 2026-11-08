@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f7f8">
+  <meta name="description" content="A browser-based Flame Aid demonstration powered by Cantera.">
+  <title>Flame Aid · Adiabatic Flame Temperature</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead">
+      <div class="mark" aria-hidden="true">🔥</div>
+      <div>
+        <p class="eyebrow">FLAME AID · WEB DEMO</p>
+        <h1>Flame Aid</h1>
+        <p class="subtitle">Cantera calculations run locally in your browser.</p>
+      </div>
+    </header>
+
+    <nav class="calculator-tabs" aria-label="Flame Aid calculators">
+      <a class="calculator-tab active" href="./index.html" aria-current="page"><span>🔥</span>Flame Temp</a>
+      <a class="calculator-tab" href="https://apps.apple.com/app/id6827337125" title="Open Flame Aid on the App Store"><span>⏱</span>Ignition Delay</a>
+      <a class="calculator-tab" href="https://apps.apple.com/app/id6827337125" title="Open Flame Aid on the App Store"><span>💓</span>Flame Speed</a>
+      <a class="calculator-tab" href="https://apps.apple.com/app/id6827337125" title="Open Flame Aid on the App Store"><span>⚗️</span>Fuel Blends</a>
+    </nav>
+
+    <section class="workspace" aria-label="Flame temperature calculator">
+      <form id="calculator" class="card">
+        <label class="field">
+          <span>Fuel</span>
+          <select id="fuel">
+            <option value="methane">Methane · GRI-Mech 3.0</option>
+            <option value="jetA">Jet-A · HyChem with UCSD NOx</option>
+          </select>
+        </label>
+
+        <label class="field mode-field">
+          <span>Mixture input</span>
+          <select id="mixture-mode">
+            <option value="mass">Mass Flow</option>
+            <option value="volume">Volume Flow</option>
+            <option value="equivalence">Equivalence Ratio</option>
+          </select>
+        </label>
+
+        <div class="field-grid" id="equivalence-fields">
+          <label class="field">
+            <span>Equivalence ratio, φ</span>
+            <input id="phi" type="number" min="0.01" max="10" step="0.01" value="1.00" required>
+          </label>
+        </div>
+
+        <div id="flow-fields" class="flow-fields" hidden>
+          <div class="field-grid">
+            <label class="field">
+              <span>Fuel flow</span>
+              <div class="input-with-select"><input id="fuel-flow" type="number" min="0.000001" step="any" value="1"><select id="fuel-flow-unit" aria-label="Fuel flow unit"></select></div>
+            </label>
+            <label class="field">
+              <span>Air flow</span>
+              <div class="input-with-select"><input id="air-flow" type="number" min="0.000001" step="any" value="17.2"><select id="air-flow-unit" aria-label="Air flow unit"></select></div>
+            </label>
+          </div>
+          <label class="field density-field" id="liquid-density-field" hidden>
+            <span>Jet-A liquid density</span>
+            <div class="input-unit"><input id="liquid-density" type="number" min="100" max="1500" step="1" value="800"><span>kg/m³</span></div>
+          </label>
+          <p class="flow-hint" id="flow-hint">The app converts both streams to kg/s before calculating equivalence ratio.</p>
+        </div>
+
+        <div class="field-grid">
+          <label class="field">
+            <span>Initial temperature</span>
+            <div class="input-unit"><input id="temperature" type="number" min="150" max="3000" step="1" value="300" required><span>K</span></div>
+          </label>
+          <label class="field">
+            <span>Pressure</span>
+            <div class="input-unit"><input id="pressure" type="number" min="1" max="10000" step="0.1" value="101.325" required><span>kPa</span></div>
+          </label>
+        </div>
+
+        <div class="mechanism-note" id="mechanism-note">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="mechanism-description">Methane, CH₄ + air · GRI-Mech 3.0</span>
+        </div>
+        <button id="calculate" type="submit" disabled>Loading chemistry engine…</button>
+        <p id="engine-status" class="engine-status" role="status" aria-live="polite">Preparing the browser-based Cantera engine. First load may take a little longer.</p>
+      </form>
+
+      <section class="card result-card" aria-live="polite">
+        <p class="eyebrow">RESULT</p>
+        <div class="temperature-result"><span id="result-temperature">—</span><span class="result-unit">K</span></div>
+        <p class="result-caption">Adiabatic flame temperature · φ <span id="result-phi">—</span></p>
+        <p id="flow-summary" class="flow-summary"></p>
+        <div id="no-results" class="species-empty">Calculate a case to see equilibrium products.</div>
+        <dl id="species" class="species-list" hidden></dl>
+        <p class="caution">Use with caution. Results depend on the selected mechanism and assumptions; they do not guarantee combustion analysis.</p>
+      </section>
+    </section>
+
+    <section class="more-calculators" aria-label="More Flame Aid calculators">
+      <div class="more-copy">
+        <p class="eyebrow">MORE IN FLAME AID</p>
+        <h2>Need another calculation?</h2>
+        <p>Explore ignition delay, flame speed, additional fuels, and custom fuel blends in the mobile app.</p>
+      </div>
+      <div class="mobile-links">
+        <a class="store-link" href="https://apps.apple.com/app/id6827337125"> App Store</a>
+        <a class="store-link secondary" href="https://play.google.com/store/apps/details?id=com.lunaandsol.flameaid">Google Play</a>
+        <a class="repo-link" href="https://github.com/shaunkim/FlameAid-Web">View this demo's source on GitHub ↗</a>
+      </div>
+    </section>
+
+    <footer>
+      <p>Flame Aid is an independent project. Cantera powers the chemistry calculations.</p>
+      <p><a href="https://github.com/shaunkim/FlameAid-Web">GitHub source</a> · <a href="https://apps.apple.com/app/id6827337125">App Store</a> · <a href="https://play.google.com/store/apps/details?id=com.lunaandsol.flameaid">Google Play</a> · <a href="https://cantera.org">Cantera</a></p>
+    </footer>
+  </main>
+</body>
+</html>
