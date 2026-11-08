@@ -1,6 +1,14 @@
 # Flame Aid Web Demo
 
+<p align="center">
+  <img src="site/assets/app-icon.png" alt="Flame Aid app icon" width="160">
+</p>
+
 Static GitHub Pages demo for adiabatic flame temperature. The page follows Flame Aid's light iOS layout and orange accent. The browser downloads the Cantera WebAssembly engine and mechanism data as static assets; thermochemistry is computed on the visitor's device. There is no calculation server or user account.
+
+## Why I built this
+
+I am a combustion CFD engineer and have used Cantera for about a decade. During tests, I often need to turn measured fuel and air flows into equivalence ratio and a quick flame-temperature estimate. I first tried solving that problem with a Facebook chatbot and a Python service on Heroku, but that setup was no longer practical to operate for free. With help from OpenAI Codex, I cross-compiled Cantera for iOS and built the on-device tool I wanted in the test cell.
 
 ## Included calculations
 
@@ -27,11 +35,20 @@ The BSD 3-Clause license at the repository root applies to original Flame Aid We
 
 ## Links
 
+- [Flame Aid Web Demo](https://shaunkim.github.io/FlameAid-Web/)
 - [Flame Aid Web Demo source](https://github.com/shaunkim/FlameAid-Web)
 - [Flame Aid for iPhone](https://apps.apple.com/app/id6827337125)
-- [Flame Aid for Android](https://play.google.com/store/apps/details?id=com.lunaandsol.flameaid)
+- [Flame Aid for Android (coming soon)](https://play.google.com/store/apps/details?id=com.lunaandsol.flameaid)
 - [Cantera](https://cantera.org)
 - [GRI-Mech 3.0](https://combustion.berkeley.edu/gri-mech/version30/text30.html)
+
+## References
+
+1. S. Kim, *ASME Journal of Engineering for Gas Turbines and Power*, **148**(11), 111017 (2026). [Article](https://asmedigitalcollection.asme.org/gasturbinespower/article/148/11/111017/1234757). This paper describes the lightweight HyChem A2 mechanism with the UCSD NOx subset used for the Jet-A flame-temperature calculation in this demo.
+2. H. Wang et al., “A physics-based approach to modeling real-fuel combustion chemistry—I. Evidence from experiments, and thermodynamic, chemical kinetic and statistical considerations,” *Combustion and Flame*, **193** (2018), 502–519. [Stanford HyChem source and references](https://web.stanford.edu/group/haiwanglab/HyChem/).
+3. R. Xu et al., “A physics-based approach to modeling real-fuel combustion chemistry—II. Reaction kinetic models of jet and rocket fuels,” *Combustion and Flame*, **193** (2018), 520–537. [Stanford HyChem source and references](https://web.stanford.edu/group/haiwanglab/HyChem/).
+4. GRI-Mech 3.0, G. P. Smith et al. [Mechanism, thermodynamic data, and transport data](https://combustion.berkeley.edu/gri-mech/version30/text30.html).
+5. D. G. Goodwin, H. K. Moffat, I. Schoegl, R. L. Speth, and B. W. Weber, *Cantera: An Object-oriented Software Toolkit for Chemical Kinetics, Thermodynamics, and Transport Processes*. [Cantera citation guidance](https://cantera.org/citations.html).
 
 ## Caution
 
