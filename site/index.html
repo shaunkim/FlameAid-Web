@@ -12,9 +12,9 @@
 <body>
   <main class="shell">
     <header class="masthead">
-      <div class="mark" aria-hidden="true">🔥</div>
+      <img class="mark" src="./assets/app-icon.png" alt="Flame Aid app icon" width="52" height="52">
       <div>
-        <p class="eyebrow">FLAME AID · WEB DEMO</p>
+        <p class="catchphrase">The first-aid kit for flame calculations</p>
         <h1>Flame Aid</h1>
         <p class="subtitle">Cantera calculations run locally in your browser.</p>
       </div>
@@ -22,10 +22,21 @@
 
     <nav class="calculator-tabs" aria-label="Flame Aid calculators">
       <a class="calculator-tab active" href="./index.html" aria-current="page"><span>🔥</span>Flame Temp</a>
-      <a class="calculator-tab" href="https://apps.apple.com/app/id6827337125" title="Open Flame Aid on the App Store"><span>⏱</span>Ignition Delay</a>
-      <a class="calculator-tab" href="https://apps.apple.com/app/id6827337125" title="Open Flame Aid on the App Store"><span>💓</span>Flame Speed</a>
-      <a class="calculator-tab" href="https://apps.apple.com/app/id6827337125" title="Open Flame Aid on the App Store"><span>⚗️</span>Fuel Blends</a>
+      <button class="calculator-tab app-only-tab" type="button" data-calculator="Ignition Delay"><span>⏱</span>Ignition Delay</button>
+      <button class="calculator-tab app-only-tab" type="button" data-calculator="Flame Speed"><span>💓</span>Flame Speed</button>
+      <button class="calculator-tab app-only-tab" type="button" data-calculator="Fuel Blends"><span>⚗️</span>Fuel Blends</button>
     </nav>
+
+    <dialog id="app-availability" class="availability-dialog" aria-labelledby="availability-title" aria-describedby="availability-description">
+      <button id="close-availability" class="dialog-close" type="button" aria-label="Close">×</button>
+      <p class="eyebrow">FLAME AID MOBILE APP</p>
+      <h2 id="availability-title">Continue on your phone</h2>
+      <p id="availability-description"><strong id="availability-calculator">This calculator</strong> is available in the Flame Aid app, where calculations run locally on your phone.</p>
+      <div class="availability-links">
+        <a class="store-link" href="https://apps.apple.com/app/id6827337125" target="_blank" rel="noopener">App Store</a>
+        <a class="store-link secondary" href="https://play.google.com/store/apps/details?id=com.lunaandsol.flameaid" target="_blank" rel="noopener">Google Play</a>
+      </div>
+    </dialog>
 
     <section class="workspace" aria-label="Flame temperature calculator">
       <form id="calculator" class="card">

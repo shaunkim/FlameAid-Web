@@ -14,7 +14,7 @@ const mechanisms = {
     phase: "gas",
     fuel: "POSF10325:1",
     label: "Jet-A, POSF10325 + air · HyChem with UCSD NOx",
-    expectedProducts: ["NO", "NO2", "CO2", "H2O", "CO", "H2"]
+    expectedProducts: ["CO2", "H2O", "CO", "H2", "O2", "N2", "NO", "NO2"]
   }
 };
 
@@ -33,6 +33,19 @@ const equivalenceFields = document.querySelector("#equivalence-fields");
 const flowFields = document.querySelector("#flow-fields");
 const densityField = document.querySelector("#liquid-density-field");
 const flowHint = document.querySelector("#flow-hint");
+const availabilityDialog = document.querySelector("#app-availability");
+const availabilityCalculator = document.querySelector("#availability-calculator");
+
+document.querySelectorAll(".app-only-tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    availabilityCalculator.textContent = tab.dataset.calculator;
+    availabilityDialog.showModal();
+  });
+});
+document.querySelector("#close-availability").addEventListener("click", () => availabilityDialog.close());
+availabilityDialog.addEventListener("click", (event) => {
+  if (event.target === availabilityDialog) availabilityDialog.close();
+});
 
 const massUnits = [
   ["kg/s", 1], ["kg/min", 1 / 60], ["kg/h", 1 / 3600],
@@ -44,6 +57,7 @@ const volumeUnits = [
   ["m³/s", 1], ["m³/h", 1 / 3600], ["ft³/min (cfm)", 0.028316846592 / 60],
   ["US gal/min", 0.003785411784 / 60]
 ];
+const DEFAULT_MASS_FLOW_UNIT = "kg/s";
 
 let pyodide;
 let activeMode = mixtureMode.value;
@@ -114,7 +128,7 @@ function updateInputMode(resetFuelDefaults = false) {
   document.querySelector("#fuel-flow-unit").disabled = !usesFlow;
   document.querySelector("#air-flow-unit").disabled = !usesFlow;
   const units = mode === "volume" ? volumeUnits : massUnits;
-  const preferred = mode === "volume" ? "L/min" : "kg/s";
+  const preferred = mode === "volume" ? "L/min" : DEFAULT_MASS_FLOW_UNIT;
   populateUnits(document.querySelector("#fuel-flow-unit"), units, preferred);
   populateUnits(document.querySelector("#air-flow-unit"), units, preferred);
   if (usesFlow) {
@@ -130,8 +144,8 @@ function updateInputMode(resetFuelDefaults = false) {
   activeMode = mode;
 }
 
-populateUnits(document.querySelector("#fuel-flow-unit"), massUnits, "kg/s");
-populateUnits(document.querySelector("#air-flow-unit"), massUnits, "kg/s");
+populateUnits(document.querySelector("#fuel-flow-unit"), massUnits, DEFAULT_MASS_FLOW_UNIT);
+populateUnits(document.querySelector("#air-flow-unit"), massUnits, DEFAULT_MASS_FLOW_UNIT);
 for (const stream of ["fuel", "air"]) {
   const unitSelect = document.querySelector(`#${stream}-flow-unit`);
   unitSelect.addEventListener("change", () => {

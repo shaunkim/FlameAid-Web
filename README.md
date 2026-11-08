@@ -9,7 +9,7 @@ Static GitHub Pages demo for adiabatic flame temperature. The page follows Flame
 - Mixture entry by mass flow, actual volume flow, or equivalence ratio. Each stream has its own unit selector. Gas volume flow uses the entered initial temperature and pressure; Jet-A volume flow uses the editable liquid density.
 - Adiabatic constant-pressure equilibrium (`HP`), with selected equilibrium products shown beneath the result.
 
-Ignition delay, flame speed, additional fuels, and Fuel Blends link to the mobile app.
+Ignition delay, flame speed, additional fuels, and Fuel Blends open a chooser for the iOS and Android apps. These calculations run locally on the phone.
 
 ## GitHub Pages
 
