@@ -1,5 +1,5 @@
 const PYODIDE_BASE = "https://cdn.jsdelivr.net/pyodide/v0.29.4/full/";
-const CANTERA_WHEEL = "./assets/cantera-pyodide.whl";
+const CANTERA_WHEEL_MANIFEST = "./assets/cantera-wheel.json";
 
 const mechanisms = {
   methane: {
@@ -156,7 +156,10 @@ async function loadEngine() {
     const { loadPyodide } = await import(`${PYODIDE_BASE}pyodide.mjs`);
     pyodide = await loadPyodide({ indexURL: PYODIDE_BASE });
     await pyodide.loadPackage("micropip");
-    const wheelUrl = new URL(CANTERA_WHEEL, location.href).href;
+    const wheelManifestResponse = await fetch(CANTERA_WHEEL_MANIFEST);
+    if (!wheelManifestResponse.ok) throw new Error("The Cantera WebAssembly package could not be located.");
+    const wheelManifest = await wheelManifestResponse.json();
+    const wheelUrl = new URL(`./assets/${wheelManifest.file}`, location.href).href;
     await pyodide.runPythonAsync(`import micropip\nawait micropip.install("${wheelUrl}")`);
     await pyodide.runPythonAsync(PYTHON_CALCULATE);
     calculateButton.disabled = false;

@@ -48,7 +48,8 @@ jobs:
         run: |
           wheel="$(find build/cantera/build/pyodide_dist -maxdepth 1 -name 'cantera-*.whl' -print -quit)"
           test -n "$wheel"
-          cp "$wheel" site/assets/cantera-pyodide.whl
+          cp "$wheel" site/assets/
+          printf '{"file":"%s"}\n' "$(basename "$wheel")" > site/assets/cantera-wheel.json
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
