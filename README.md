@@ -39,7 +39,7 @@ The BSD 3-Clause license at the repository root applies to original Flame Aid We
 - [Flame Aid Web Demo](https://shaunkim.github.io/FlameAid-Web/)
 - [Flame Aid Web Demo source](https://github.com/shaunkim/FlameAid-Web)
 - [Flame Aid for iPhone](https://apps.apple.com/app/id6827337125)
-- Google Play: coming soon
+- [Flame Aid on Google Play](https://play.google.com/store/apps/details?id=com.lunaandsol.flameaid)
 - [Cantera](https://cantera.org)
 - [GRI-Mech 3.0](https://combustion.berkeley.edu/gri-mech/version30/text30.html)
 
