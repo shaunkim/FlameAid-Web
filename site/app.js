@@ -603,7 +603,7 @@ def calculate_blend_properties(payload):
     water_mass_fraction = float(gas.Y[gas.species_index("H2O")]) if atoms["H"] > 0 else 0.0
     lhv = -(product_enthalpy - reactant_enthalpy) / fuel_mass_fraction
 
-    water = ct.Solution("liquidvapor.yaml", "water")
+    water = ct.PureFluid("liquidvapor.yaml", "water")
     water.TQ = reference_temperature, 0.0
     liquid_water_enthalpy = float(water.enthalpy_mass)
     water.TQ = reference_temperature, 1.0
