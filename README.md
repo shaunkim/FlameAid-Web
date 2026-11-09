@@ -15,9 +15,10 @@ I am a combustion CFD engineer and have used Cantera for about a decade. During 
 - Methane/air using GRI-Mech 3.0.
 - Jet-A/POSF10325 using the author-supplied HyChem A2 mechanism with the UCSD NOx subset (`A2highT_nox.yaml`). This is the lightweight UCSD-NOx mechanism; it is not Stanford's separate Glarborg NOx mechanism.
 - Mixture entry by mass flow, actual volume flow, or equivalence ratio. Each stream has its own unit selector. Gas volume flow uses the entered initial temperature and pressure; Jet-A volume flow uses the editable liquid density.
+- A GRI-Mech 3.0 **Fuel Blends** calculator for heating values and gas properties, with custom-blend adiabatic flame temperature by equivalence ratio.
 - Adiabatic constant-pressure equilibrium (`HP`), with selected equilibrium products shown beneath the result.
 
-Ignition delay, flame speed, additional fuels, and Fuel Blends open a chooser for the iOS and Android apps. These calculations run locally on the phone.
+Ignition delay, flame speed, and additional fuels open a chooser for the iOS and Android apps. Those calculations run locally on the phone.
 
 ## GitHub Pages
 
@@ -49,6 +50,7 @@ The BSD 3-Clause license at the repository root applies to original Flame Aid We
 3. R. Xu et al., “A physics-based approach to modeling real-fuel combustion chemistry—II. Reaction kinetic models of jet and rocket fuels,” *Combustion and Flame*, **193** (2018), 520–537. [Stanford HyChem source and references](https://web.stanford.edu/group/haiwanglab/HyChem/).
 4. GRI-Mech 3.0, G. P. Smith et al. [Mechanism, thermodynamic data, and transport data](https://combustion.berkeley.edu/gri-mech/version30/text30.html).
 5. D. G. Goodwin, H. K. Moffat, I. Schoegl, R. L. Speth, and B. W. Weber, *Cantera: An Object-oriented Software Toolkit for Chemical Kinetics, Thermodynamics, and Transport Processes*. [Cantera citation guidance](https://cantera.org/citations.html).
+6. [Cantera heating-value calculations](https://cantera.org/3.2/userguide/heating-value.html) and [transport properties](https://cantera.org/3.2/reference/transport/index.html) document the thermochemical and transport-property methods used for gas blends.
 
 ## Caution
 

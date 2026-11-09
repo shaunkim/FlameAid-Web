@@ -21,10 +21,10 @@
     </header>
 
     <nav class="calculator-tabs" aria-label="Flame Aid calculators">
-      <a class="calculator-tab active" href="./index.html" aria-current="page"><span>🔥</span>Flame Temp</a>
+      <button class="calculator-tab active" type="button" data-calculator="aft" aria-current="page"><span>🔥</span>Flame Temp</button>
       <button class="calculator-tab app-only-tab" type="button" data-calculator="Ignition Delay"><span>⏱</span>Ignition Delay</button>
       <button class="calculator-tab app-only-tab" type="button" data-calculator="Flame Speed"><span>💓</span>Flame Speed</button>
-      <button class="calculator-tab app-only-tab" type="button" data-calculator="Fuel Blends"><span>⚗️</span>Fuel Blends</button>
+      <button class="calculator-tab" type="button" data-calculator="fuel-blends"><span>⚗️</span>Fuel Blends</button>
     </nav>
 
     <dialog id="app-availability" class="availability-dialog" aria-labelledby="availability-title" aria-describedby="availability-description">
@@ -38,17 +38,19 @@
       </div>
     </dialog>
 
-    <section class="workspace" aria-label="Flame temperature calculator">
-      <form id="calculator" class="card">
+    <section id="aft-view" class="calculator-view active" aria-label="Flame temperature calculator">
+      <section class="workspace">
+        <form id="calculator" class="card">
         <label class="field">
           <span>Fuel</span>
           <select id="fuel">
             <option value="methane">Methane · GRI-Mech 3.0</option>
             <option value="jetA">Jet-A · HyChem with UCSD NOx</option>
+            <option id="custom-fuel-option" value="custom" hidden disabled>Custom Blend · GRI-Mech 3.0</option>
           </select>
         </label>
 
-        <label class="field mode-field">
+        <label id="mixture-mode-field" class="field mode-field">
           <span>Mixture input</span>
           <select id="mixture-mode">
             <option value="mass">Mass Flow</option>
@@ -99,9 +101,9 @@
         </div>
         <button id="calculate" type="submit" disabled>Loading chemistry engine…</button>
         <p id="engine-status" class="engine-status" role="status" aria-live="polite">Preparing the browser-based Cantera engine. First load may take a little longer.</p>
-      </form>
+        </form>
 
-      <section class="card result-card" aria-live="polite">
+        <section class="card result-card" aria-live="polite">
         <p class="eyebrow">RESULT</p>
         <div class="temperature-result"><span id="result-temperature">—</span><span class="result-unit">K</span></div>
         <p class="result-caption">Adiabatic flame temperature · φ <span id="result-phi">—</span></p>
@@ -109,6 +111,57 @@
         <div id="no-results" class="species-empty">Calculate a case to see equilibrium products.</div>
         <dl id="species" class="species-list" hidden></dl>
         <p class="caution">Use with caution. Results depend on the selected mechanism and assumptions; they do not guarantee combustion analysis.</p>
+        </section>
+      </section>
+    </section>
+
+    <section id="fuel-blends-view" class="calculator-view" aria-label="Fuel Blends calculator" hidden>
+      <section class="workspace blend-workspace">
+        <form id="fuel-blend-calculator" class="card">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">GRI-MECH 3.0</p>
+              <h2>Fuel Blends</h2>
+            </div>
+            <button id="add-species" class="icon-button" type="button" aria-label="Add species" title="Add species">+</button>
+          </div>
+          <p class="blend-instructions">Choose gas species and enter molar parts. Values are normalized automatically, so the total may be above 1.</p>
+          <div id="blend-rows" class="blend-rows" aria-label="Blend species"></div>
+          <p id="blend-total" class="blend-total" aria-live="polite">Total: 100</p>
+          <p class="blend-hint">Zero species are skipped. Swipe is not available on web; use the remove button on a row.</p>
+
+          <h3 class="subheading">Conditions</h3>
+          <div class="field-grid">
+            <label class="field">
+              <span>Temperature</span>
+              <div class="input-unit"><input id="blend-temperature" type="number" min="200" max="2500" step="1" value="300" required><span>K</span></div>
+            </label>
+            <label class="field">
+              <span>Pressure</span>
+              <div class="input-unit"><input id="blend-pressure" type="number" min="10" max="5000" step="any" value="101.325" required><span>kPa</span></div>
+            </label>
+          </div>
+          <button id="compute-properties" class="secondary-action" type="button" disabled>Loading chemistry engine…</button>
+          <p id="blend-status" class="engine-status" role="status" aria-live="polite">Blend calculations use Cantera locally in this browser.</p>
+        </form>
+
+        <section class="card result-card blend-results" aria-live="polite">
+          <p class="eyebrow">FUEL PROPERTIES</p>
+          <div id="blend-properties-empty" class="species-empty">Compute the blend to see its thermodynamic and transport properties.</div>
+          <dl id="blend-properties" class="property-list" hidden></dl>
+          <p class="caution">Fuel properties depend on the selected mechanism and entered state. Use results with care.</p>
+          <div class="blend-aft">
+            <p class="eyebrow">ADIABATIC FLAME TEMPERATURE</p>
+            <h2>Use this blend in AFT</h2>
+            <label class="field phi-field" for="blend-phi">
+              <span>Equivalence ratio, φ <output id="blend-phi-value" for="blend-phi">1.00</output></span>
+              <input id="blend-phi" type="range" min="0.1" max="3" step="0.01" value="1" disabled>
+            </label>
+            <button id="calculate-blend-aft" type="button" disabled>Calculate Flame Temperature</button>
+            <p id="blend-aft-result" class="blend-aft-result" aria-live="polite">— <span>K</span></p>
+            <p id="blend-aft-status" class="engine-status" role="status" aria-live="polite">Compute fuel properties before calculating AFT.</p>
+          </div>
+        </section>
       </section>
     </section>
 
@@ -116,7 +169,7 @@
       <div class="more-copy">
         <p class="eyebrow">MORE IN FLAME AID</p>
         <h2>Need another calculation?</h2>
-        <p>Explore ignition delay, flame speed, additional fuels, and custom fuel blends in the mobile app.</p>
+        <p>Explore ignition delay, flame speed, and additional fuels in the mobile app.</p>
       </div>
       <div class="mobile-links">
         <a class="store-link" href="https://apps.apple.com/app/id6827337125"> App Store</a>

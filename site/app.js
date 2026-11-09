@@ -17,6 +17,13 @@ const mechanisms = {
     expectedProducts: ["CO2", "H2O", "CO", "H2", "O2", "N2", "NO", "NO2"]
   }
 };
+const blendSpecies = [
+  ["H2", "Hydrogen · H₂"], ["CO", "Carbon monoxide · CO"], ["CH4", "Methane · CH₄"],
+  ["C2H2", "Acetylene · C₂H₂"], ["C2H4", "Ethylene · C₂H₄"], ["C2H6", "Ethane · C₂H₆"],
+  ["C3H8", "Propane · C₃H₈"], ["CH3OH", "Methanol · CH₃OH"], ["NH3", "Ammonia · NH₃"],
+  ["CO2", "Carbon dioxide · CO₂"], ["N2", "Nitrogen · N₂"], ["H2O", "Water · H₂O"],
+  ["O2", "Oxygen · O₂"], ["AR", "Argon · Ar"]
+];
 
 const form = document.querySelector("#calculator");
 const fuelSelect = document.querySelector("#fuel");
@@ -35,12 +42,34 @@ const densityField = document.querySelector("#liquid-density-field");
 const flowHint = document.querySelector("#flow-hint");
 const availabilityDialog = document.querySelector("#app-availability");
 const availabilityCalculator = document.querySelector("#availability-calculator");
+const calculatorTabs = [...document.querySelectorAll(".calculator-tab[data-calculator]")];
+const aftView = document.querySelector("#aft-view");
+const blendView = document.querySelector("#fuel-blends-view");
+const mixtureModeField = document.querySelector("#mixture-mode-field");
+const customFuelOption = document.querySelector("#custom-fuel-option");
+const blendForm = document.querySelector("#fuel-blend-calculator");
+const blendRowsElement = document.querySelector("#blend-rows");
+const blendTotalElement = document.querySelector("#blend-total");
+const blendStatus = document.querySelector("#blend-status");
+const computePropertiesButton = document.querySelector("#compute-properties");
+const blendPropertiesElement = document.querySelector("#blend-properties");
+const blendPropertiesEmpty = document.querySelector("#blend-properties-empty");
+const blendPhi = document.querySelector("#blend-phi");
+const blendPhiValue = document.querySelector("#blend-phi-value");
+const calculateBlendAFTButton = document.querySelector("#calculate-blend-aft");
+const blendAFTResultElement = document.querySelector("#blend-aft-result");
+const blendAFTStatus = document.querySelector("#blend-aft-status");
+const blendTemperature = document.querySelector("#blend-temperature");
+const blendPressure = document.querySelector("#blend-pressure");
 
 document.querySelectorAll(".app-only-tab").forEach((tab) => {
   tab.addEventListener("click", () => {
     availabilityCalculator.textContent = tab.dataset.calculator;
     availabilityDialog.showModal();
   });
+});
+calculatorTabs.filter((tab) => !tab.classList.contains("app-only-tab")).forEach((tab) => {
+  tab.addEventListener("click", () => showCalculator(tab.dataset.calculator));
 });
 document.querySelector("#close-availability").addEventListener("click", () => availabilityDialog.close());
 availabilityDialog.addEventListener("click", (event) => {
@@ -61,6 +90,25 @@ const DEFAULT_MASS_FLOW_UNIT = "kg/s";
 
 let pyodide;
 let activeMode = mixtureMode.value;
+let modeBeforeCustomBlend = "mass";
+let blendInputRevision = 0;
+let computedBlendRevision = -1;
+let computedFuelComposition = null;
+
+function showCalculator(name) {
+  const isBlend = name === "fuel-blends";
+  aftView.hidden = isBlend;
+  blendView.hidden = !isBlend;
+  aftView.classList.toggle("active", !isBlend);
+  blendView.classList.toggle("active", isBlend);
+  for (const tab of calculatorTabs) {
+    const selected = tab.dataset.calculator === name;
+    tab.classList.toggle("active", selected);
+    if (selected) tab.setAttribute("aria-current", "page");
+    else tab.removeAttribute("aria-current");
+  }
+  if (isBlend) blendRowsElement.querySelector("input, select")?.focus({ preventScroll: true });
+}
 
 function populateUnits(select, units, desired) {
   const previous = select.value;
@@ -112,8 +160,9 @@ function setFlowFromMass(stream, massFlow, mode) {
 }
 
 function updateInputMode(resetFuelDefaults = false) {
-  const mode = mixtureMode.value;
-  const usesFlow = mode !== "equivalence";
+  const customFuelSelected = fuelSelect.value === "custom";
+  const mode = customFuelSelected ? "equivalence" : mixtureMode.value;
+  const usesFlow = !customFuelSelected && mode !== "equivalence";
   const oldMassFlows = resetFuelDefaults || activeMode === "equivalence"
     ? defaultMassFlows()
     : {
@@ -122,6 +171,8 @@ function updateInputMode(resetFuelDefaults = false) {
       };
   equivalenceFields.hidden = usesFlow;
   flowFields.hidden = !usesFlow;
+  mixtureModeField.hidden = customFuelSelected;
+  mixtureMode.disabled = customFuelSelected;
   document.querySelector("#phi").disabled = usesFlow;
   document.querySelector("#fuel-flow").disabled = !usesFlow;
   document.querySelector("#air-flow").disabled = !usesFlow;
@@ -158,12 +209,250 @@ for (const stream of ["fuel", "air"]) {
     unitSelect.dataset.previousUnit = unitSelect.value;
   });
 }
-mixtureMode.addEventListener("change", () => updateInputMode());
-
-fuelSelect.addEventListener("change", () => {
-  mechanismDescription.textContent = mechanisms[fuelSelect.value].label;
-  updateInputMode(true);
+mixtureMode.addEventListener("change", () => {
+  if (fuelSelect.value !== "custom") modeBeforeCustomBlend = mixtureMode.value;
+  updateInputMode();
 });
+
+fuelSelect.dataset.previousFuel = fuelSelect.value;
+fuelSelect.addEventListener("change", () => {
+  const previousFuel = fuelSelect.dataset.previousFuel;
+  if (fuelSelect.value === "custom") {
+    if (previousFuel !== "custom") modeBeforeCustomBlend = mixtureMode.value;
+    mixtureMode.value = "equivalence";
+  } else if (previousFuel === "custom") {
+    mixtureMode.value = modeBeforeCustomBlend;
+  }
+  fuelSelect.dataset.previousFuel = fuelSelect.value;
+  mechanismDescription.textContent = fuelSelect.value === "custom"
+    ? "Custom gas blend + air · GRI-Mech 3.0"
+    : mechanisms[fuelSelect.value].label;
+  updateInputMode(true);
+  updateAFTAvailability();
+});
+
+function updateAFTAvailability() {
+  const customIsFresh = fuelSelect.value !== "custom"
+    || (computedFuelComposition && computedBlendRevision === blendInputRevision);
+  calculateButton.disabled = !pyodide || !customIsFresh;
+  if (fuelSelect.value === "custom" && !customIsFresh) {
+    engineStatus.textContent = "Blend inputs changed. Recompute fuel properties before using this blend in AFT.";
+  }
+  calculateBlendAFTButton.disabled = !pyodide
+    || !computedFuelComposition
+    || computedBlendRevision !== blendInputRevision;
+  blendPhi.disabled = calculateBlendAFTButton.disabled;
+}
+
+function invalidateBlendResults() {
+  blendInputRevision += 1;
+  computedBlendRevision = -1;
+  blendPropertiesElement.hidden = true;
+  blendPropertiesEmpty.hidden = false;
+  blendPropertiesEmpty.textContent = "Inputs changed. Recompute fuel properties before using this blend.";
+  customFuelOption.disabled = true;
+  blendAFTResultElement.innerHTML = "— <span>K</span>";
+  blendAFTStatus.textContent = "Blend inputs changed. Recompute fuel properties before calculating AFT.";
+  updateAFTAvailability();
+}
+
+function updateBlendTotal() {
+  const values = [...blendRowsElement.querySelectorAll(".blend-row input")]
+    .map((input) => Number(input.value) || 0);
+  const total = values.reduce((sum, value) => sum + value, 0);
+  blendTotalElement.textContent = `Total: ${total.toLocaleString(undefined, { maximumFractionDigits: 6 })}`;
+}
+
+function updateBlendSpeciesOptions() {
+  const selects = [...blendRowsElement.querySelectorAll(".blend-row select")];
+  for (const select of selects) {
+    const current = select.value;
+    const usedElsewhere = new Set(selects.filter((other) => other !== select).map((other) => other.value).filter(Boolean));
+    select.replaceChildren(new Option("Select species", ""));
+    for (const [name, label] of blendSpecies) {
+      if (name === current || !usedElsewhere.has(name)) select.add(new Option(label, name));
+    }
+    select.value = current;
+  }
+  document.querySelector("#add-species").disabled = selects.length >= blendSpecies.length;
+}
+
+function addBlendRow(species = "", molarParts = 0) {
+  const row = document.createElement("div");
+  row.className = "blend-row";
+  const speciesLabel = document.createElement("label");
+  speciesLabel.className = "field";
+  speciesLabel.append(document.createTextNode("Species"));
+  const speciesSelect = document.createElement("select");
+  speciesSelect.setAttribute("aria-label", "Blend species");
+  speciesSelect.required = true;
+  speciesLabel.append(speciesSelect);
+  const amountLabel = document.createElement("label");
+  amountLabel.className = "field";
+  amountLabel.append(document.createTextNode("Molar parts"));
+  const amountInput = document.createElement("input");
+  amountInput.type = "number";
+  amountInput.min = "0";
+  amountInput.step = "any";
+  amountInput.required = true;
+  amountInput.value = String(molarParts);
+  amountInput.setAttribute("aria-label", `${species || "Blend"} molar parts`);
+  amountLabel.append(amountInput);
+  const removeButton = document.createElement("button");
+  removeButton.className = "remove-species";
+  removeButton.type = "button";
+  removeButton.textContent = "×";
+  removeButton.setAttribute("aria-label", "Remove species");
+  row.append(speciesLabel, amountLabel, removeButton);
+  blendRowsElement.append(row);
+  speciesSelect.addEventListener("change", () => {
+    updateBlendSpeciesOptions();
+    invalidateBlendResults();
+  });
+  amountInput.addEventListener("input", () => {
+    amountInput.setCustomValidity("");
+    updateBlendTotal();
+    invalidateBlendResults();
+  });
+  removeButton.addEventListener("click", () => {
+    row.remove();
+    updateBlendSpeciesOptions();
+    updateBlendTotal();
+    invalidateBlendResults();
+  });
+  updateBlendSpeciesOptions();
+  speciesSelect.value = species;
+  updateBlendSpeciesOptions();
+}
+
+function readBlendPayload() {
+  if (!blendForm.reportValidity()) return null;
+  const rows = [...blendRowsElement.querySelectorAll(".blend-row")].map((row) => ({
+    species: row.querySelector("select").value,
+    molarParts: Number(row.querySelector("input").value)
+  }));
+  if (rows.some((row) => !Number.isFinite(row.molarParts) || row.molarParts < 0)) {
+    throw new Error("Molar parts must be finite values at or above zero.");
+  }
+  if (rows.some((row) => !row.species && row.molarParts > 0)) {
+    throw new Error("Choose a species for each row with positive molar parts.");
+  }
+  const total = rows.reduce((sum, row) => sum + row.molarParts, 0);
+  if (!Number.isFinite(total) || total <= 0) throw new Error("Enter a positive total of molar parts.");
+  return {
+    rows,
+    temperature_k: Number(blendTemperature.value),
+    pressure_pa: Number(blendPressure.value) * 1000,
+    mechanism_path: "/tmp/flameaid-gri30.yaml",
+    phase: "gri30"
+  };
+}
+
+function formatDecimal(value, digits = 4) {
+  return Number(value).toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+
+function renderBlendProperties(properties) {
+  const rows = [
+    ["Lower heating value", `${formatDecimal(properties.lhv_j_per_kg / 1e6, 3)} MJ/kg`],
+    ["Higher heating value", `${formatDecimal(properties.hhv_j_per_kg / 1e6, 3)} MJ/kg`],
+    ["Density", `${formatDecimal(properties.density_kg_per_m3, 4)} kg/m³`],
+    ["Dynamic viscosity", `${Number(properties.dynamic_viscosity_pa_s).toExponential(4)} Pa·s`],
+    ["Kinematic viscosity", `${Number(properties.kinematic_viscosity_m2_per_s).toExponential(4)} m²/s`],
+    ["Mean molecular weight", `${formatDecimal(properties.mean_molecular_weight_kg_per_kmol, 3)} kg/kmol`],
+    ["Specific gravity", formatDecimal(properties.specific_gravity, 4)],
+    ["cp", `${formatDecimal(properties.cp_j_per_kg_k / 1000, 4)} kJ/(kg·K)`],
+    ["cv", `${formatDecimal(properties.cv_j_per_kg_k / 1000, 4)} kJ/(kg·K)`],
+    ["γ", formatDecimal(properties.gamma, 4)],
+    ["Thermal conductivity", `${formatDecimal(properties.thermal_conductivity_w_per_mk, 5)} W/(m·K)`],
+    ["Stoichiometric air/fuel ratio", `${formatDecimal(properties.stoich_air_fuel_ratio, 4)} kg/kg`]
+  ];
+  blendPropertiesElement.replaceChildren();
+  for (const [name, value] of rows) {
+    const label = document.createElement("dt");
+    label.textContent = name;
+    const result = document.createElement("dd");
+    result.textContent = value;
+    blendPropertiesElement.append(label, result);
+  }
+  blendPropertiesEmpty.hidden = true;
+  blendPropertiesElement.hidden = false;
+}
+
+function runPythonJson(functionName, payload) {
+  pyodide.globals.set("payload_json", JSON.stringify(payload));
+  pyodide.runPython(`import json\n_payload = json.loads(payload_json)`);
+  return JSON.parse(pyodide.runPython(`${functionName}(_payload)`));
+}
+
+document.querySelector("#add-species").addEventListener("click", () => {
+  const used = new Set([...blendRowsElement.querySelectorAll("select")].map((select) => select.value));
+  const nextSpecies = blendSpecies.find(([name]) => !used.has(name))?.[0] ?? "";
+  addBlendRow(nextSpecies, 0);
+  invalidateBlendResults();
+});
+
+for (const input of [blendTemperature, blendPressure]) {
+  input.addEventListener("input", invalidateBlendResults);
+}
+
+blendPhi.addEventListener("input", () => {
+  blendPhiValue.value = Number(blendPhi.value).toFixed(2);
+  blendPhiValue.textContent = Number(blendPhi.value).toFixed(2);
+});
+
+computePropertiesButton.addEventListener("click", () => {
+  try {
+    const payload = readBlendPayload();
+    if (!payload) return;
+    computePropertiesButton.disabled = true;
+    blendStatus.textContent = "Computing fuel properties locally with Cantera…";
+    const result = runPythonJson("calculate_blend_properties", payload);
+    computedFuelComposition = result.normalized_fuel;
+    computedBlendRevision = blendInputRevision;
+    customFuelOption.hidden = false;
+    customFuelOption.disabled = false;
+    renderBlendProperties(result);
+    blendStatus.textContent = "Fuel properties calculated locally with Cantera. This blend is ready for AFT.";
+    updateAFTAvailability();
+  } catch (error) {
+    blendStatus.textContent = error.message || "Unable to calculate fuel properties.";
+    console.error(error);
+  } finally {
+    computePropertiesButton.disabled = !pyodide;
+  }
+});
+
+calculateBlendAFTButton.addEventListener("click", () => {
+  if (!computedFuelComposition || computedBlendRevision !== blendInputRevision) {
+    blendAFTStatus.textContent = "Compute fuel properties before calculating AFT.";
+    return;
+  }
+  try {
+    calculateBlendAFTButton.disabled = true;
+    blendAFTStatus.textContent = "Running Cantera equilibrium locally…";
+    const result = runPythonJson("calculate_blend_aft", {
+      mechanism_path: "/tmp/flameaid-gri30.yaml",
+      phase: "gri30",
+      fuel: computedFuelComposition,
+      phi: Number(blendPhi.value),
+      temperature_k: Number(blendTemperature.value),
+      pressure_pa: Number(blendPressure.value) * 1000
+    });
+    blendAFTResultElement.innerHTML = `${formatDecimal(result.temperature_k, 2)} <span>K</span>`;
+    blendAFTStatus.textContent = `Adiabatic flame temperature calculated at φ ${Number(result.phi).toFixed(2)}.`;
+  } catch (error) {
+    blendAFTStatus.textContent = error.message || "The equilibrium calculation failed.";
+    console.error(error);
+  } finally {
+    updateAFTAvailability();
+  }
+});
+
+addBlendRow("H2", 50);
+addBlendRow("CO", 50);
+addBlendRow("CH4", 0);
+updateBlendTotal();
 
 async function loadEngine() {
   try {
@@ -176,11 +465,18 @@ async function loadEngine() {
     const wheelUrl = new URL(`./assets/${wheelManifest.file}`, location.href).href;
     await pyodide.runPythonAsync(`import micropip\nawait micropip.install("${wheelUrl}")`);
     await pyodide.runPythonAsync(PYTHON_CALCULATE);
-    calculateButton.disabled = false;
+    const gri30Response = await fetch(mechanisms.methane.file);
+    if (!gri30Response.ok) throw new Error("The GRI-Mech 3.0 mechanism could not be loaded.");
+    pyodide.FS.writeFile("/tmp/flameaid-gri30.yaml", await gri30Response.text());
+    computePropertiesButton.disabled = false;
     calculateButton.textContent = "Calculate Flame Temperature";
+    computePropertiesButton.textContent = "Compute Fuel Properties";
     engineStatus.textContent = "Chemistry engine ready. Your inputs stay in this browser.";
+    blendStatus.textContent = "Chemistry engine ready. Fuel blends are calculated in this browser.";
+    updateAFTAvailability();
   } catch (error) {
     engineStatus.textContent = error.message || "Unable to start the browser chemistry engine.";
+    blendStatus.textContent = error.message || "Unable to start the browser chemistry engine.";
     calculateButton.textContent = "Engine unavailable";
     console.error(error);
   }
@@ -189,6 +485,7 @@ async function loadEngine() {
 const PYTHON_CALCULATE = `
 import cantera as ct
 import json
+import math
 
 def calculate(payload):
     gas = ct.Solution(payload["mechanism_path"], payload["phase"])
@@ -231,6 +528,125 @@ def calculate(payload):
         except Exception:
             continue
     return json.dumps({"temperature_k": float(gas.T), "phi": float(equivalence_ratio), "fuel_mass_flow": fuel_mass_flow, "air_mass_flow": air_mass_flow, "products": products})
+
+def calculate_blend_properties(payload):
+    allowed_species = {
+        "H2", "CO", "CH4", "C2H2", "C2H4", "C2H6", "C3H8", "CH3OH",
+        "NH3", "CO2", "N2", "H2O", "O2", "AR"
+    }
+    parts = {}
+    for row in payload["rows"]:
+        species = row["species"]
+        value = float(row["molarParts"])
+        if species not in allowed_species:
+            raise ValueError("Choose a species from the GRI-Mech 3.0 blend list.")
+        if not math.isfinite(value) or value < 0:
+            raise ValueError("Molar parts must be finite values at or above zero.")
+        if species in parts:
+            raise ValueError("Each species can only be added once.")
+        if value > 0:
+            parts[species] = value
+    total = sum(parts.values())
+    if not math.isfinite(total) or total <= 0:
+        raise ValueError("Enter a positive total of molar parts.")
+    fuel = {species: value / total for species, value in parts.items()}
+
+    gas = ct.Solution(payload["mechanism_path"], payload["phase"])
+    temperature = float(payload["temperature_k"])
+    pressure = float(payload["pressure_pa"])
+    if not math.isfinite(temperature) or temperature <= 0 or not math.isfinite(pressure) or pressure <= 0:
+        raise ValueError("Temperature and pressure must be finite and positive.")
+    gas.TPX = temperature, pressure, fuel
+    normalized_fuel = {name: float(gas.X[gas.species_index(name)]) for name in fuel}
+    fuel_mw = float(gas.mean_molecular_weight)
+    density = float(gas.density)
+    viscosity = float(gas.viscosity)
+    conductivity = float(gas.thermal_conductivity)
+    cp = float(gas.cp_mass)
+    cv = float(gas.cv_mass)
+    gas.TPX = temperature, pressure, "O2:1,N2:3.76"
+    specific_gravity = density / float(gas.density)
+
+    atoms = {}
+    for element in ("C", "H", "O", "N", "Ar"):
+        element_index = gas.element_index(element)
+        atoms[element] = sum(
+            amount * gas.n_atoms(gas.species_index(name), element_index)
+            for name, amount in normalized_fuel.items()
+        )
+    oxygen_demand = atoms["C"] + atoms["H"] / 4.0 - atoms["O"] / 2.0
+    if not math.isfinite(oxygen_demand) or oxygen_demand <= 0:
+        raise ValueError("Fuel blend must have positive external oxygen demand.")
+    oxygen_mw = float(gas.molecular_weights[gas.species_index("O2")])
+    nitrogen_mw = float(gas.molecular_weights[gas.species_index("N2")])
+    stoich_air_fuel = oxygen_demand * (oxygen_mw + 3.76 * nitrogen_mw) / fuel_mw
+
+    reference_temperature = 298.15
+    reference_pressure = 101325.0
+    reactants = dict(normalized_fuel)
+    reactants["O2"] = reactants.get("O2", 0.0) + oxygen_demand
+    gas.TPX = reference_temperature, reference_pressure, reactants
+    reactant_enthalpy = float(gas.enthalpy_mass)
+    fuel_mass_fraction = fuel_mw / (fuel_mw + oxygen_demand * oxygen_mw)
+
+    products = {}
+    if atoms["C"] > 0:
+        products["CO2"] = atoms["C"]
+    if atoms["H"] > 0:
+        products["H2O"] = atoms["H"] / 2.0
+    if atoms["N"] > 0:
+        products["N2"] = atoms["N"] / 2.0
+    if atoms["Ar"] > 0:
+        products["AR"] = atoms["Ar"]
+    gas.TPX = reference_temperature, reference_pressure, products
+    product_enthalpy = float(gas.enthalpy_mass)
+    water_mass_fraction = float(gas.Y[gas.species_index("H2O")]) if atoms["H"] > 0 else 0.0
+    lhv = -(product_enthalpy - reactant_enthalpy) / fuel_mass_fraction
+
+    water = ct.Solution("liquidvapor.yaml", "water")
+    water.TQ = reference_temperature, 0.0
+    liquid_water_enthalpy = float(water.enthalpy_mass)
+    water.TQ = reference_temperature, 1.0
+    vapor_water_enthalpy = float(water.enthalpy_mass)
+    hhv = -(
+        product_enthalpy - reactant_enthalpy
+        + (liquid_water_enthalpy - vapor_water_enthalpy) * water_mass_fraction
+    ) / fuel_mass_fraction
+
+    return json.dumps({
+        "normalized_fuel": normalized_fuel,
+        "mole_fractions": normalized_fuel,
+        "lhv_j_per_kg": lhv,
+        "hhv_j_per_kg": hhv,
+        "density_kg_per_m3": density,
+        "dynamic_viscosity_pa_s": viscosity,
+        "kinematic_viscosity_m2_per_s": viscosity / density,
+        "mean_molecular_weight_kg_per_kmol": fuel_mw,
+        "specific_gravity": specific_gravity,
+        "cp_j_per_kg_k": cp,
+        "cv_j_per_kg_k": cv,
+        "gamma": cp / cv,
+        "thermal_conductivity_w_per_mk": conductivity,
+        "stoich_air_fuel_ratio": stoich_air_fuel
+    })
+
+def calculate_blend_aft(payload):
+    return calculate({
+        "mechanism_path": payload["mechanism_path"],
+        "phase": payload["phase"],
+        "temperature_k": payload["temperature_k"],
+        "pressure_pa": payload["pressure_pa"],
+        "fuel": payload["fuel"],
+        "fuel_kind": "custom",
+        "mode": "equivalence",
+        "phi": payload["phi"],
+        "fuel_flow": 0.0,
+        "air_flow": 0.0,
+        "fuel_unit_factor": 1.0,
+        "air_unit_factor": 1.0,
+        "liquid_density": 800,
+        "product_species": ["CO2", "H2O", "CO", "H2", "O2", "N2"]
+    })
 `;
 
 function renderResult(result) {
@@ -258,7 +674,13 @@ function renderResult(result) {
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!pyodide || !form.reportValidity()) return;
-  const selected = mechanisms[fuelSelect.value];
+  if (fuelSelect.value === "custom" && (!computedFuelComposition || computedBlendRevision !== blendInputRevision)) {
+    engineStatus.textContent = "Blend inputs changed. Recompute fuel properties before using this blend in AFT.";
+    return;
+  }
+  const selected = fuelSelect.value === "custom"
+    ? { ...mechanisms.methane, fuel: computedFuelComposition, label: "Custom gas blend + air · GRI-Mech 3.0" }
+    : mechanisms[fuelSelect.value];
   calculateButton.disabled = true;
   calculateButton.textContent = "Calculating…";
   engineStatus.textContent = "Running Cantera equilibrium in this browser…";
@@ -272,7 +694,7 @@ form.addEventListener("submit", async (event) => {
     const fuelFlowUnit = document.querySelector("#fuel-flow-unit").value;
     const airFlowUnit = document.querySelector("#air-flow-unit").value;
     pyodide.globals.set("payload_json", JSON.stringify({
-      mechanism_path: "/tmp/flameaid-mechanism.yaml",
+      mechanism_path: fuelSelect.value === "custom" ? "/tmp/flameaid-gri30.yaml" : "/tmp/flameaid-mechanism.yaml",
       phase: selected.phase,
       fuel: selected.fuel,
       fuel_kind: fuelSelect.value,
