@@ -10,7 +10,7 @@
 
 I'm a combustion CFD engineer and have used Cantera for about a decade. During tests, I often need to turn measured fuel and air flows into an equivalence ratio and a quick estimate of adiabatic flame temperature. A few years ago I built a [Facebook chatbot](https://youtu.be/sT9sTux4E1k) that called a Python service on Heroku. Once that setup was no longer practical to run for free, I wanted something I could run on the phone itself.
 
-I spent weeks, and at times months, trying to get OpenFOAM running on macOS. Googling compiler errors led me down rabbit holes that were often inefficient and sometimes the most fun part of learning. With Flame Aid, Codex worked through unfamiliar cross compilation toolchains much faster than I could on my own. That's where AI helped me most as an engineer who uses Cantera. I hope it leaves room for some of the detours that made learning fun in the first place.
+Long time ago, I used to spend weeks, and at times months, trying to get OpenFOAM running on macOS. Googling compiler errors led me down rabbit holes that were often inefficient and sometimes the most fun part of learning. With Flame Aid, Codex worked through unfamiliar cross compilation toolchains much faster than I could on my own. That's where AI helped me most as an engineer who uses Cantera. I hope it leaves room for some of the detours that made learning fun in the first place.
 
 ## How Cantera runs on each platform
 
@@ -50,15 +50,6 @@ To try the overlapping cases in the web demo, select Methane and enter φ = 1, 3
 
 The table summarizes earlier iOS simulator runs and desktop calculations. The browser build uses a separate Cantera revision and still needs its own comparison. For Jet-A flame temperature, the historical iOS fixture used the baseline `A2highT.yaml`, while the web demo uses `A2highT_nox.yaml`. The Jet-A paper below documents the mechanism used by the demo.
 
-## GitHub Pages
-
-Push to `main` or run the **Build and deploy Flame Aid Web Demo** workflow. GitHub Actions builds a Pyodide-compatible Cantera wheel from the pinned upstream Cantera commit, adds it to `site/assets/`, and publishes the static `site/` directory. The browser runtime is pinned to Pyodide 0.29.4 on jsDelivr; it serves static WebAssembly/Python runtime files only. Cantera calculations run locally in the browser.
-
-GitHub Pages must be enabled with **Build and deployment: GitHub Actions**. The published project site URL is `https://shaunkim.github.io/FlameAid-Web/`.
-
-## Local preview
-
-Serve `site/` with a static-file preview server. The Cantera wheel is added by the Pages workflow, so a local preview before that workflow completes will show the interface but will not calculate.
 
 ## Data and licensing
 
