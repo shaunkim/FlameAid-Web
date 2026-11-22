@@ -108,6 +108,17 @@ button:disabled { background: #c8c9cb; cursor: wait; }
 footer { display: flex; justify-content: space-between; gap: 14px; margin-top: 24px; color: #92969a; font-size: 11px; }
 footer p { margin: 0; }
 a { color: #71757a; }
+.privacy-choice-button { width: auto; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: #71757a; font: inherit; font-size: inherit; font-weight: 400; text-decoration: underline; }
+.privacy-choice-button:hover:not(:disabled) { background: transparent; color: #4b4e52; }
+.analytics-consent { position: fixed; z-index: 20; right: 16px; bottom: 16px; left: 16px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px; align-items: center; width: min(700px, calc(100% - 32px)); margin-inline: auto; padding: 18px 20px; border: 1px solid #e1e2e4; border-radius: 16px; background: #fff; box-shadow: 0 12px 40px #17191c24; }
+.analytics-consent[hidden] { display: none; }
+.analytics-consent .eyebrow { margin-bottom: 5px; color: #e7752d; }
+.analytics-consent h2 { margin: 0; font-size: 16px; }
+.analytics-consent-copy > p:last-child { margin: 6px 0 0; color: #777b80; font-size: 12px; line-height: 1.5; }
+.analytics-consent-actions { display: grid; gap: 7px; width: 150px; }
+.analytics-consent-actions button { min-height: 38px; font-size: 12px; }
+.analytics-consent-actions .secondary-action { border: 1px solid #e4e5e7; background: #fff; color: #3b3e42; }
+.analytics-consent-actions .secondary-action:hover:not(:disabled) { background: #f7f7f8; }
 @media (max-width: 700px) {
   .shell { padding-top: 32px; }
   .calculator-tabs { grid-template-columns: repeat(4, minmax(68px, 1fr)); overflow-x: auto; }
@@ -118,6 +129,8 @@ a { color: #71757a; }
   .more-calculators { align-items: flex-start; flex-direction: column; }
   .mobile-links { width: 100%; grid-template-columns: 1fr 1fr; }
   footer { flex-direction: column; }
+  .analytics-consent { grid-template-columns: 1fr; gap: 12px; }
+  .analytics-consent-actions { grid-template-columns: 1fr 1fr; width: 100%; }
 }
 @media (max-width: 430px) {
   .field-grid { grid-template-columns: 1fr; }

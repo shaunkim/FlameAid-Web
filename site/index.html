@@ -7,6 +7,7 @@
   <meta name="description" content="A browser-based Flame Aid demonstration powered by Cantera.">
   <title>Flame Aid · Adiabatic Flame Temperature</title>
   <link rel="stylesheet" href="./styles.css">
+  <script defer src="./analytics-consent.js"></script>
   <script type="module" src="./app.js"></script>
 </head>
 <body>
@@ -180,8 +181,20 @@
 
     <footer>
       <p>Flame Aid is an independent project. Cantera powers the chemistry calculations.</p>
-      <p><a href="https://github.com/shaunkim/FlameAid-Web">GitHub source</a> · <a href="https://apps.apple.com/app/id6827337125">App Store</a> · <a href="https://play.google.com/store/apps/details?id=com.lunaandsol.flameaid">Google Play</a> · <a href="https://cantera.org">Cantera</a></p>
+      <p><a href="https://github.com/shaunkim/FlameAid-Web">GitHub source</a> · <a href="https://apps.apple.com/app/id6827337125">App Store</a> · <a href="https://play.google.com/store/apps/details?id=com.lunaandsol.flameaid">Google Play</a> · <a href="https://cantera.org">Cantera</a> · <a href="https://www.lunaandsol.org/privacy-policy.html">Privacy Policy</a> · <button id="privacy-choices" class="privacy-choice-button" type="button">Privacy choices</button></p>
     </footer>
   </main>
+
+  <aside id="analytics-consent" class="analytics-consent" aria-labelledby="analytics-consent-title" aria-describedby="analytics-consent-copy" hidden>
+    <div class="analytics-consent-copy">
+      <p class="eyebrow">PRIVACY OPTIONS</p>
+      <h2 id="analytics-consent-title">Optional analytics</h2>
+      <p id="analytics-consent-copy">If you accept, Google Analytics through Google Tag Manager can measure visits and browser/device details. Flame Aid does not add calculator inputs or results to its analytics events. Read our <a href="https://www.lunaandsol.org/privacy-policy.html">privacy policy</a>.</p>
+    </div>
+    <div class="analytics-consent-actions">
+      <button id="accept-analytics" type="button">Accept analytics</button>
+      <button id="decline-analytics" class="secondary-action" type="button">Decline</button>
+    </div>
+  </aside>
 </body>
 </html>
